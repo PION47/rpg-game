@@ -37,98 +37,31 @@
       border-radius: 8px;
       margin-bottom: 15px;
     }
-    #player-name {
-      font-weight: bold;
-      color: #a0e0ff;
+    #menu {
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    #menu button {
+      margin: 0 5px;
+      background-color: #222;
+      color: #fff;
+      padding: 5px 10px;
+      border: 1px solid #555;
+      cursor: pointer;
+    }
+    #menu button:hover {
+      background-color: #444;
     }
   </style>
 </head>
 <body>
+  <div id="menu">
+    <button onclick="saveGame()">게임 저장</button>
+    <button onclick="loadGame()">불러오기</button>
+    <button onclick="toggleBgm()">BGM 토글</button>
+  </div>
   <div id="game-box">
     <div id="text"></div>
     <div id="choices"></div>
   </div>
 
-  <script>
-    let player = {
-      name: "모험가",
-      learnedMagic: false,
-    };
-
-    const scenes = {
-      intro: {
-        text: `이름 없는 숲에서 눈을 뜬 당신... 이름을 알려주세요:`,
-        choices: [
-          { text: "이름 입력하기", next: "nameInput" }
-        ]
-      },
-      nameInput: {
-        text: `당신의 이름은 무엇입니까? <br><input type='text' id='nameField'><button class='choice' onclick='setName()'>확인</button>`,
-        choices: []
-      },
-      start: {
-        text: () => `${player.name}님, 당신은 깊은 숲속에서 눈을 떴습니다. 어느 쪽으로 가시겠습니까?<br><img src='https://i.imgur.com/dcGgKZC.png' alt='숲 이미지'>`,
-        choices: [
-          { text: "왼쪽 길로 간다", next: "magePath" },
-          { text: "오른쪽 길로 간다", next: "warriorPath" },
-        ]
-      },
-      magePath: {
-        text: () => {
-          player.learnedMagic = true;
-          return `당신은 고대 마법의 탑을 발견하고 마법을 배웁니다. 강력한 마법사가 되었습니다.<br><img src='https://i.imgur.com/Ki0A9hM.png' alt='마법사 이미지'>`;
-        },
-        choices: [
-          { text: "탑을 떠난다", next: "finalEncounter" }
-        ]
-      },
-      warriorPath: {
-        text: () => {
-          return `당신은 검을 집어들고 성을 향합니다. 전사가 되어 왕을 수호하게 됩니다.<br><img src='https://i.imgur.com/xfndOdJ.png' alt='전사 이미지'>`;
-        },
-        choices: [
-          { text: "성을 떠난다", next: "finalEncounter" }
-        ]
-      },
-      finalEncounter: {
-        text: () => {
-          if (player.learnedMagic) {
-            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 마법으로 그림자를 물리치고 세상을 구합니다. <b>엔딩: 마법 영웅</b><br><img src='https://i.imgur.com/SbZGQNN.png' alt='마법 결투'>`;
-          } else {
-            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 검을 휘둘렀지만 역부족이었습니다... 세상은 어둠에 잠깁니다. <b>엔딩: 비극적 패배</b><br><img src='https://i.imgur.com/W2vUTTZ.png' alt='패배'>`;
-          }
-        },
-        choices: [
-          { text: "다시 시작", next: "intro" }
-        ]
-      }
-    };
-
-    function setName() {
-      const input = document.getElementById('nameField');
-      if (input && input.value.trim() !== "") {
-        player.name = input.value.trim();
-        renderScene("start");
-      }
-    }
-
-    function renderScene(sceneKey) {
-      const scene = scenes[sceneKey];
-      const sceneText = typeof scene.text === 'function' ? scene.text() : scene.text;
-      document.getElementById('text').innerHTML = sceneText;
-
-      const choicesDiv = document.getElementById('choices');
-      choicesDiv.innerHTML = '';
-      scene.choices.forEach(choice => {
-        const btn = document.createElement('button');
-        btn.innerText = choice.text;
-        btn.className = 'choice';
-        btn.onclick = () => renderScene(choice.next);
-        choicesDiv.appendChild(btn);
-      });
-    }
-
-    renderScene("intro");
-  </script>
-</body>
-</html>
