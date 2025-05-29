@@ -5,24 +5,40 @@
   <title>유노RPG</title>
   <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
   <style>
-    body { margin: 0; background: #000; }
-    #game-container { width: 800px; height: 600px; margin: auto; display: block; }
+    body {
+      margin: 0; 
+      background: #000; 
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      color: #0f0;
+      font-family: 'Arial Black', Gadget, sans-serif;
+    }
+    #game-container {
+      width: 800px;
+      height: 600px;
+      border: 4px solid #0f0;
+      box-sizing: border-box;
+    }
   </style>
 </head>
 <body>
   <div id="game-container"></div>
+
   <script>
     const config = {
       type: Phaser.AUTO,
       width: 800,
       height: 600,
       parent: 'game-container',
+      backgroundColor: '#000000',
       scene: {
         preload() {
-          // 이미지 등 리소스 미리 불러오기
+          // 필요하면 리소스 미리 불러오기
         },
         create() {
-          this.add.text(200, 280, '유노RPG 테스트 성공!', { fontSize: '32px', fill: '#00ff00' });
+          this.add.text(100, 280, '유노RPG 테스트 성공!', { fontSize: '48px', fill: '#00ff00' });
         }
       }
     };
