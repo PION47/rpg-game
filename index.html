@@ -1,33 +1,76 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>판타지 선택형 RPG</title>
   <style>
     body {
       background-color: #1e1e1e;
       color: #f0f0f0;
       font-family: 'Courier New', monospace;
-      padding: 20px;
+      padding: 0;
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      justify-content: center;
+      align-items: center;
     }
-    #game-box {
-      border: 2px solid #888;
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
+    #game-container {
       background-color: #2a2a2a;
+      border: 2px solid #888;
+      width: 90vw;
+      max-width: 600px;
+      padding: 20px;
+      box-sizing: border-box;
+      display: flex;
+      flex-direction: column;
+      height: 80vh;
+      justify-content: space-between;
+      border-radius: 8px;
     }
-    .choice {
-      display: block;
-      margin-top: 10px;
+    #menu {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    button.menu-btn {
       background-color: #444;
-      color: #fff;
       border: none;
-      padding: 10px;
+      color: white;
+      padding: 6px 12px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      transition: background-color 0.3s;
+    }
+    button.menu-btn:hover {
+      background-color: #666;
+    }
+    #text {
+      flex-grow: 1;
+      overflow-y: auto;
+      margin-bottom: 15px;
+      font-size: 16px;
+      line-height: 1.5;
+    }
+    #choices {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    button.choice {
+      background-color: #444;
+      border: none;
+      color: white;
+      padding: 12px;
       font-size: 16px;
       cursor: pointer;
+      border-radius: 6px;
+      transition: background-color 0.3s;
     }
-    .choice:hover {
+    button.choice:hover {
       background-color: #666;
     }
     img {
@@ -35,33 +78,160 @@
       max-height: 200px;
       object-fit: cover;
       border-radius: 8px;
+      margin-top: 10px;
       margin-bottom: 15px;
     }
-    #menu {
-      margin-bottom: 20px;
-      text-align: center;
-    }
-    #menu button {
-      margin: 0 5px;
-      background-color: #222;
-      color: #fff;
-      padding: 5px 10px;
-      border: 1px solid #555;
-      cursor: pointer;
-    }
-    #menu button:hover {
-      background-color: #444;
+    #player-name {
+      font-weight: bold;
+      color: #a0e0ff;
     }
   </style>
 </head>
 <body>
-  <div id="menu">
-    <button onclick="saveGame()">게임 저장</button>
-    <button onclick="loadGame()">불러오기</button>
-    <button onclick="toggleBgm()">BGM 토글</button>
-  </div>
-  <div id="game-box">
+  <div id="game-container">
+    <div id="menu">
+      <button class="menu-btn" id="saveBtn" title="게임 저장">💾 저장</button>
+      <button class="menu-btn" id="loadBtn" title="게임 불러오기">📂 불러오기</button>
+      <button class="menu-btn" id="musicBtn" title="배경음악 켜기/끄기">🎵 ON</button>
+    </div>
     <div id="text"></div>
     <div id="choices"></div>
   </div>
 
+  <audio id="bgm" loop src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_755bf5d1a0.mp3?filename=fantasy-adventure-11260.mp3"></audio>
+  <audio id="clickSound" src="https://freesound.org/data/previews/256/256113_3263906-lq.mp3"></audio>
+
+  <script>
+    const bgm = document.getElementById('bgm');
+    const clickSound = document.getElementById('clickSound');
+    const musicBtn = document.getElementById('musicBtn');
+    const saveBtn = document.getElementById('saveBtn');
+    const loadBtn = document.getElementById('loadBtn');
+
+    let musicPlaying = false;
+
+    musicBtn.onclick = () => {
+      if (musicPlaying) {
+        bgm.pause();
+        musicBtn.textContent = '🎵 OFF';
+      } else {
+        bgm.play();
+        musicBtn.textContent = '🎵 ON';
+      }
+      musicPlaying = !musicPlaying;
+    };
+
+    saveBtn.onclick = () => {
+      localStorage.setItem('rpgSave', JSON.stringify(player));
+      localStorage.setItem('rpgScene', currentSceneKey);
+      alert('게임이 저장되었습니다!');
+    };
+
+    loadBtn.onclick = () => {
+      const savedPlayer = localStorage.getItem('rpgSave');
+      const savedScene = localStorage.getItem('rpgScene');
+      if (savedPlayer && savedScene) {
+        Object.assign(player, JSON.parse(savedPlayer));
+        renderScene(savedScene);
+        alert('저장된 게임을 불러왔습니다.');
+      } else {
+        alert('저장된 게임이 없습니다.');
+      }
+    };
+
+    const player = {
+      name: "모험가",
+      learnedMagic: false,
+    };
+
+    let currentSceneKey = 'intro';
+
+    const scenes = {
+      intro: {
+        text: `이름 없는 숲에서 눈을 뜬 당신... 이름을 알려주세요:`,
+        choices: [
+          { text: "이름 입력하기", next: "nameInput" }
+        ]
+      },
+      nameInput: {
+        text: `당신의 이름은 무엇입니까? <br><input type='text' id='nameField' autofocus><button class='choice' onclick='setName()'>확인</button>`,
+        choices: []
+      },
+      start: {
+        text: () => `${player.name}님, 당신은 깊은 숲속에서 눈을 떴습니다. 어느 쪽으로 가시겠습니까?<br><img src='https://cdn.pixabay.com/photo/2017/01/20/00/30/forest-1997347_960_720.jpg' alt='숲 이미지'>`,
+        choices: [
+          { text: "왼쪽 길로 간다", next: "magePath" },
+          { text: "오른쪽 길로 간다", next: "warriorPath" },
+        ]
+      },
+      magePath: {
+        text: () => {
+          player.learnedMagic = true;
+          return `당신은 고대 마법의 탑을 발견하고 마법을 배웁니다. 강력한 마법사가 되었습니다.<br><img src='https://cdn.pixabay.com/photo/2017/10/25/15/54/wizard-2883243_960_720.png' alt='마법사 이미지'>`;
+        },
+        choices: [
+          { text: "탑을 떠난다", next: "finalEncounter" }
+        ]
+      },
+      warriorPath: {
+        text: () => {
+          player.learnedMagic = false;
+          return `당신은 검을 집어들고 성을 향합니다. 전사가 되어 왕을 수호하게 됩니다.<br><img src='https://cdn.pixabay.com/photo/2018/04/23/22/57/knight-3346979_960_720.png' alt='전사 이미지'>`;
+        },
+        choices: [
+          { text: "성을 떠난다", next: "finalEncounter" }
+        ]
+      },
+      finalEncounter: {
+        text: () => {
+          if (player.learnedMagic) {
+            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 마법으로 그림자를 물리치고 세상을 구합니다. <b>엔딩: 마법 영웅</b><br><img src='https://cdn.pixabay.com/photo/2018/08/25/14/28/fantasy-3625433_960_720.jpg' alt='마법 결투'>`;
+          } else {
+            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 검을 휘둘렀지만 역부족이었습니다... 세상은 어둠에 잠깁니다. <b>엔딩: 비극적 패배</b><br><img src='https://cdn.pixabay.com/photo/2016/02/10/16/29/ruin-1190853_960_720.jpg' alt='패배'>`;
+          }
+        },
+        choices: [
+          { text: "다시 시작", next: "intro" }
+        ]
+      }
+    };
+
+    function setName() {
+      const input = document.getElementById('nameField');
+      if (input && input.value.trim() !== "") {
+        player.name = input.value.trim();
+        renderScene("start");
+      } else {
+        alert("이름을 입력해주세요.");
+      }
+    }
+
+    function playClickSound() {
+      clickSound.currentTime = 0;
+      clickSound.play();
+    }
+
+    function renderScene(sceneKey) {
+      currentSceneKey = sceneKey;
+      const scene = scenes[sceneKey];
+      const sceneText = typeof scene.text === 'function' ? scene.text() : scene.text;
+      document.getElementById('text').innerHTML = sceneText;
+
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = '';
+      scene.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.innerText = choice.text;
+        btn.className = 'choice';
+        btn.onclick = () => {
+          playClickSound();
+          renderScene(choice.next);
+        };
+        choicesDiv.appendChild(btn);
+      });
+    }
+
+    renderScene("intro");
+  </script>
+</body>
+</html>
