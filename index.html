@@ -146,6 +146,23 @@
 
     battleText.setText('');
   }
+  <script>
+  let lastContent = null;
+  async function checkUpdate() {
+    try {
+      const res = await fetch(window.location.href, {cache: "no-store"});
+      const text = await res.text();
+      if (lastContent && lastContent !== text) {
+        console.log("새 버전 발견! 새로고침합니다.");
+        location.reload();
+      }
+      lastContent = text;
+    } catch(e) {
+      console.error("업데이트 확인 실패", e);
+    }
+  }
+  setInterval(checkUpdate, 5000);  // 5초마다 체크
+  checkUpdate();
 </script>
 </body>
 </html>
