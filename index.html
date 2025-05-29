@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>유노 로그라이크 RPG - 키보드 조작</title>
+<title>Youknow_rpg</title>
 <style>
   body {
     background: #111;
@@ -34,7 +34,7 @@
 </head>
 <body>
 
-<h1>유노 로그라이크 RPG (키보드 조작)</h1>
+<h1>유노알피지 (Youknow_rpg)</h1>
 
 <div id="status">
   <div>HP: <span id="hp">30</span></div>
@@ -90,11 +90,12 @@
     positionEl.textContent = player.position;
   }
 
-  // 선택지 관리
+  // 선택지 배열에 각각 {text, action, probability} 구조 사용 (probability: 0~1 사이)
   let choices = [];
   let selectedIndex = 0;
 
   function showChoices(newChoices) {
+    // newChoices 예시: [{text:"공격하기", action:func, probability:0.7}, ...]
     choices = newChoices;
     selectedIndex = 0;
     renderChoices();
@@ -104,7 +105,21 @@
     infoEl.textContent = choices.map((c, i) => (i === selectedIndex ? '> ' : '  ') + c.text).join('\n');
   }
 
-  // 행동 함수들
+  // 확률에 따라 실행할 선택지를 결정하는 함수
+  function chooseByProbability() {
+    // 1) 현재 선택한 인덱스의 확률 가져오기
+    const prob = choices[selectedIndex].probability ?? 1;
+    // 2) 확률 검사
+    if (Math.random() <= prob) {
+      // 확률 통과하면 선택지 실행
+      choices[selectedIndex].action();
+    } else {
+      // 확률 실패 시, 실행 안됨 메시지 출력 + 선택지를 다시 보여줌
+      log(`선택한 "${choices[selectedIndex].text}"는(은) 이번에는 실행되지 않았습니다.`);
+      renderChoices();
+    }
+  }
+
   function startBattle() {
     log(`⚔️ 전투 시작! ${currentMonster.name}이(가) 나타났다!`);
     showBattleChoices();
@@ -112,8 +127,8 @@
 
   function showBattleChoices() {
     showChoices([
-      { text: '공격하기', action: playerAttack },
-      { text: '도망가기', action: runAway }
+      { text: '공격하기', action: playerAttack, probability: 0.9 },
+      { text: '도망가기', action: runAway, probability: 0.5 }
     ]);
   }
 
@@ -148,7 +163,7 @@
 
   function showMoveChoices() {
     showChoices([
-      { text: '한 칸 이동하기', action: moveOneStep }
+      { text: '한 칸 이동하기', action: moveOneStep, probability: 1 }
     ]);
   }
 
@@ -167,11 +182,10 @@
   function gameOver() {
     log('💀 당신은 쓰러졌다... 게임 오버!');
     showChoices([
-      { text: '다시 시작', action: () => location.reload() }
+      { text: '다시 시작', action: () => location.reload(), probability: 1 }
     ]);
   }
 
-  // 키보드 입력 처리
   window.addEventListener('keydown', e => {
     if (choices.length === 0) return;
 
@@ -184,7 +198,7 @@
       renderChoices();
       e.preventDefault();
     } else if (e.key === ' ' || e.key === 'Enter') {
-      choices[selectedIndex].action();
+      chooseByProbability();
       e.preventDefault();
     }
   });
