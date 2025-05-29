@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>판타지 선택형 RPG</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #f0f0f0;
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+    }
+    #game-box {
+      border: 2px solid #888;
+      padding: 20px;
+      max-width: 600px;
+      margin: auto;
+      background-color: #2a2a2a;
+    }
+    .choice {
+      display: block;
+      margin-top: 10px;
+      background-color: #444;
+      color: #fff;
+      border: none;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    .choice:hover {
+      background-color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div id="game-box">
+    <div id="text"></div>
+    <div id="choices"></div>
+  </div>
+
+  <script>
+    const scenes = {
+      start: {
+        text: "당신은 깊은 숲속에서 눈을 떴습니다. 어느 쪽으로 가시겠습니까?",
+        choices: [
+          { text: "왼쪽 길로 간다", next: "magePath" },
+          { text: "오른쪽 길로 간다", next: "warriorPath" },
+        ]
+      },
+      magePath: {
+        text: "당신은 고대 마법의 탑을 발견하고 수련을 시작합니다. 마법사가 되어 세상을 구합니다.",
+        choices: [
+          { text: "다시 시작", next: "start" }
+        ]
+      },
+      warriorPath: {
+        text: "당신은 성으로 가는 길을 따라가 전사가 되어 왕을 지킵니다. 영웅으로 기억됩니다.",
+        choices: [
+          { text: "다시 시작", next: "start" }
+        ]
+      },
+    };
+
+    function renderScene(sceneKey) {
+      const scene = scenes[sceneKey];
+      document.getElementById('text').innerText = scene.text;
+
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = '';
+      scene.choices.forEach(choice => {
+        const btn = document.createElement('button');
+        btn.innerText = choice.text;
+        btn.className = 'choice';
+        btn.onclick = () => renderScene(choice.next);
+        choicesDiv.appendChild(btn);
+      });
+    }
+
+    renderScene("start");
+  </script>
+</body>
+</html>
