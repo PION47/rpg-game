@@ -1,237 +1,151 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>판타지 선택형 RPG</title>
-  <style>
-    body {
-      background-color: #1e1e1e;
-      color: #f0f0f0;
-      font-family: 'Courier New', monospace;
-      padding: 0;
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      justify-content: center;
-      align-items: center;
-    }
-    #game-container {
-      background-color: #2a2a2a;
-      border: 2px solid #888;
-      width: 90vw;
-      max-width: 600px;
-      padding: 20px;
-      box-sizing: border-box;
-      display: flex;
-      flex-direction: column;
-      height: 80vh;
-      justify-content: space-between;
-      border-radius: 8px;
-    }
-    #menu {
-      display: flex;
-      justify-content: flex-end;
-      margin-bottom: 10px;
-      gap: 10px;
-    }
-    button.menu-btn {
-      background-color: #444;
-      border: none;
-      color: white;
-      padding: 6px 12px;
-      cursor: pointer;
-      border-radius: 4px;
-      font-size: 14px;
-      transition: background-color 0.3s;
-    }
-    button.menu-btn:hover {
-      background-color: #666;
-    }
-    #text {
-      flex-grow: 1;
-      overflow-y: auto;
-      margin-bottom: 15px;
-      font-size: 16px;
-      line-height: 1.5;
-    }
-    #choices {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-    button.choice {
-      background-color: #444;
-      border: none;
-      color: white;
-      padding: 12px;
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 6px;
-      transition: background-color 0.3s;
-    }
-    button.choice:hover {
-      background-color: #666;
-    }
-    img {
-      width: 100%;
-      max-height: 200px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-top: 10px;
-      margin-bottom: 15px;
-    }
-    #player-name {
-      font-weight: bold;
-      color: #a0e0ff;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>포켓로그 스타일 턴제 RPG 프로토타입</title>
+<script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
+<style>
+  body { margin:0; padding:0; }
+  #game-container { margin: auto; display: block; width: 800px; height: 600px; }
+</style>
 </head>
 <body>
-  <div id="game-container">
-    <div id="menu">
-      <button class="menu-btn" id="saveBtn" title="게임 저장">💾 저장</button>
-      <button class="menu-btn" id="loadBtn" title="게임 불러오기">📂 불러오기</button>
-      <button class="menu-btn" id="musicBtn" title="배경음악 켜기/끄기">🎵 ON</button>
-    </div>
-    <div id="text"></div>
-    <div id="choices"></div>
-  </div>
+<div id="game-container"></div>
 
-  <audio id="bgm" loop src="https://cdn.pixabay.com/download/audio/2022/03/15/audio_755bf5d1a0.mp3?filename=fantasy-adventure-11260.mp3"></audio>
-  <audio id="clickSound" src="https://freesound.org/data/previews/256/256113_3263906-lq.mp3"></audio>
-
-  <script>
-    const bgm = document.getElementById('bgm');
-    const clickSound = document.getElementById('clickSound');
-    const musicBtn = document.getElementById('musicBtn');
-    const saveBtn = document.getElementById('saveBtn');
-    const loadBtn = document.getElementById('loadBtn');
-
-    let musicPlaying = false;
-
-    musicBtn.onclick = () => {
-      if (musicPlaying) {
-        bgm.pause();
-        musicBtn.textContent = '🎵 OFF';
-      } else {
-        bgm.play();
-        musicBtn.textContent = '🎵 ON';
+<script>
+  const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: {
+      default: 'arcade',
+      arcade: {
+        debug: false
       }
-      musicPlaying = !musicPlaying;
-    };
-
-    saveBtn.onclick = () => {
-      localStorage.setItem('rpgSave', JSON.stringify(player));
-      localStorage.setItem('rpgScene', currentSceneKey);
-      alert('게임이 저장되었습니다!');
-    };
-
-    loadBtn.onclick = () => {
-      const savedPlayer = localStorage.getItem('rpgSave');
-      const savedScene = localStorage.getItem('rpgScene');
-      if (savedPlayer && savedScene) {
-        Object.assign(player, JSON.parse(savedPlayer));
-        renderScene(savedScene);
-        alert('저장된 게임을 불러왔습니다.');
-      } else {
-        alert('저장된 게임이 없습니다.');
-      }
-    };
-
-    const player = {
-      name: "모험가",
-      learnedMagic: false,
-    };
-
-    let currentSceneKey = 'intro';
-
-    const scenes = {
-      intro: {
-        text: `이름 없는 숲에서 눈을 뜬 당신... 이름을 알려주세요:`,
-        choices: [
-          { text: "이름 입력하기", next: "nameInput" }
-        ]
-      },
-      nameInput: {
-        text: `당신의 이름은 무엇입니까? <br><input type='text' id='nameField' autofocus><button class='choice' onclick='setName()'>확인</button>`,
-        choices: []
-      },
-      start: {
-        text: () => `${player.name}님, 당신은 깊은 숲속에서 눈을 떴습니다. 어느 쪽으로 가시겠습니까?<br><img src='https://cdn.pixabay.com/photo/2017/01/20/00/30/forest-1997347_960_720.jpg' alt='숲 이미지'>`,
-        choices: [
-          { text: "왼쪽 길로 간다", next: "magePath" },
-          { text: "오른쪽 길로 간다", next: "warriorPath" },
-        ]
-      },
-      magePath: {
-        text: () => {
-          player.learnedMagic = true;
-          return `당신은 고대 마법의 탑을 발견하고 마법을 배웁니다. 강력한 마법사가 되었습니다.<br><img src='https://cdn.pixabay.com/photo/2017/10/25/15/54/wizard-2883243_960_720.png' alt='마법사 이미지'>`;
-        },
-        choices: [
-          { text: "탑을 떠난다", next: "finalEncounter" }
-        ]
-      },
-      warriorPath: {
-        text: () => {
-          player.learnedMagic = false;
-          return `당신은 검을 집어들고 성을 향합니다. 전사가 되어 왕을 수호하게 됩니다.<br><img src='https://cdn.pixabay.com/photo/2018/04/23/22/57/knight-3346979_960_720.png' alt='전사 이미지'>`;
-        },
-        choices: [
-          { text: "성을 떠난다", next: "finalEncounter" }
-        ]
-      },
-      finalEncounter: {
-        text: () => {
-          if (player.learnedMagic) {
-            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 마법으로 그림자를 물리치고 세상을 구합니다. <b>엔딩: 마법 영웅</b><br><img src='https://cdn.pixabay.com/photo/2018/08/25/14/28/fantasy-3625433_960_720.jpg' alt='마법 결투'>`;
-          } else {
-            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 검을 휘둘렀지만 역부족이었습니다... 세상은 어둠에 잠깁니다. <b>엔딩: 비극적 패배</b><br><img src='https://cdn.pixabay.com/photo/2016/02/10/16/29/ruin-1190853_960_720.jpg' alt='패배'>`;
-          }
-        },
-        choices: [
-          { text: "다시 시작", next: "intro" }
-        ]
-      }
-    };
-
-    function setName() {
-      const input = document.getElementById('nameField');
-      if (input && input.value.trim() !== "") {
-        player.name = input.value.trim();
-        renderScene("start");
-      } else {
-        alert("이름을 입력해주세요.");
-      }
+    },
+    scene: {
+      preload,
+      create,
+      update
     }
+  };
 
-    function playClickSound() {
-      clickSound.currentTime = 0;
-      clickSound.play();
+  let player;
+  let cursors;
+  let enemy;
+  let inBattle = false;
+  let battleText;
+  let turn = 'player'; // 'player' or 'enemy'
+  let playerHP = 100;
+  let enemyHP = 50;
+
+  const game = new Phaser.Game(config);
+
+  function preload() {
+    // 간단한 사각형 플레이어와 적 생성 위해 이미지 만들기
+    this.load.image('player', 'https://i.imgur.com/waPj8Ku.png'); // 픽셀 플레이어 이미지
+    this.load.image('enemy', 'https://i.imgur.com/jf8k6Td.png');  // 픽셀 적 이미지
+  }
+
+  function create() {
+    // 플레이어 위치와 스프라이트
+    player = this.physics.add.sprite(100, 300, 'player');
+    player.setCollideWorldBounds(true);
+
+    // 적 위치 및 스프라이트 (맵에 나타나는 적)
+    enemy = this.physics.add.sprite(600, 300, 'enemy');
+
+    cursors = this.input.keyboard.createCursorKeys();
+
+    // 충돌 감지 - 플레이어가 적에 닿으면 전투 시작
+    this.physics.add.overlap(player, enemy, () => {
+      if (!inBattle) startBattle(this);
+    });
+
+    // 전투 메시지 UI
+    battleText = this.add.text(400, 50, '', { fontSize: '24px', fill: '#fff' }).setOrigin(0.5);
+  }
+
+  function update() {
+    if (inBattle) return; // 전투 중에는 이동 불가
+
+    player.setVelocity(0);
+
+    if (cursors.left.isDown) {
+      player.setVelocityX(-150);
+    } else if (cursors.right.isDown) {
+      player.setVelocityX(150);
     }
-
-    function renderScene(sceneKey) {
-      currentSceneKey = sceneKey;
-      const scene = scenes[sceneKey];
-      const sceneText = typeof scene.text === 'function' ? scene.text() : scene.text;
-      document.getElementById('text').innerHTML = sceneText;
-
-      const choicesDiv = document.getElementById('choices');
-      choicesDiv.innerHTML = '';
-      scene.choices.forEach(choice => {
-        const btn = document.createElement('button');
-        btn.innerText = choice.text;
-        btn.className = 'choice';
-        btn.onclick = () => {
-          playClickSound();
-          renderScene(choice.next);
-        };
-        choicesDiv.appendChild(btn);
-      });
+    if (cursors.up.isDown) {
+      player.setVelocityY(-150);
+    } else if (cursors.down.isDown) {
+      player.setVelocityY(150);
     }
+  }
 
-    renderScene("intro");
-  </script>
+  function startBattle(scene) {
+    inBattle = true;
+    battleText.setText('전투 시작! 당신의 턴입니다.');
+    turn = 'player';
+
+    // 전투 UI: 스킬 버튼 2개 생성
+    createSkillButtons(scene);
+  }
+
+  function createSkillButtons(scene) {
+    const skill1 = scene.add.text(200, 500, '공격', { fontSize: '20px', fill: '#0f0', backgroundColor: '#222' })
+      .setInteractive()
+      .on('pointerdown', () => playerAttack(scene, 10));
+
+    const skill2 = scene.add.text(400, 500, '강한 공격', { fontSize: '20px', fill: '#f00', backgroundColor: '#222' })
+      .setInteractive()
+      .on('pointerdown', () => playerAttack(scene, 20));
+
+    // 버튼 저장해서 나중에 삭제 가능하도록 처리
+    scene.skillButtons = [skill1, skill2];
+  }
+
+  function playerAttack(scene, damage) {
+    if (turn !== 'player') return;
+    enemyHP -= damage;
+    battleText.setText(`플레이어가 ${damage} 데미지를 입혔습니다! 적 HP: ${enemyHP}`);
+
+    if (enemyHP <= 0) {
+      battleText.setText('적을 쓰러뜨렸습니다! 전투 승리!');
+      endBattle(scene);
+    } else {
+      turn = 'enemy';
+      setTimeout(() => enemyAttack(scene), 1000);
+    }
+  }
+
+  function enemyAttack(scene) {
+    if (turn !== 'enemy') return;
+    const damage = Phaser.Math.Between(5, 15);
+    playerHP -= damage;
+    battleText.setText(`적이 ${damage} 데미지를 입혔습니다! 플레이어 HP: ${playerHP}`);
+
+    if (playerHP <= 0) {
+      battleText.setText('플레이어가 쓰러졌습니다... 게임 오버!');
+      endBattle(scene);
+    } else {
+      turn = 'player';
+      battleText.setText('당신의 턴입니다.');
+    }
+  }
+
+  function endBattle(scene) {
+    inBattle = false;
+    playerHP = 100;
+    enemyHP = 50;
+
+    // 전투 UI 버튼 제거
+    scene.skillButtons.forEach(btn => btn.destroy());
+    scene.skillButtons = [];
+
+    battleText.setText('');
+  }
+</script>
 </body>
 </html>
