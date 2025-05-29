@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<title>유노 로그라이크 RPG</title>
+<title>유노 로그라이크 RPG - 키보드 조작</title>
 <style>
   body {
     background: #111;
@@ -25,23 +25,16 @@
     margin-bottom: 10px;
     white-space: pre-line;
   }
-  #choices button {
-    margin: 5px;
-    padding: 10px;
-    background: #0f0;
-    border: none;
-    color: #000;
-    font-weight: bold;
-    cursor: pointer;
-  }
-  #choices button:hover {
-    background: #afa;
+  #info {
+    margin-bottom: 10px;
+    font-size: 14px;
+    color: #a0ffa0;
   }
 </style>
 </head>
 <body>
 
-<h1>유노 로그라이크 RPG</h1>
+<h1>유노 로그라이크 RPG (키보드 조작)</h1>
 
 <div id="status">
   <div>HP: <span id="hp">30</span></div>
@@ -51,18 +44,16 @@
 
 <div id="log"></div>
 
-<div id="choices"></div>
+<div id="info">← → 키로 선택, 스페이스바(또는 Enter)로 확인하세요.</div>
 
 <script>
 (() => {
-  // 플레이어 상태
   const player = {
     hp: 30,
     attack: 5,
     position: 0,
   };
 
-  // 몬스터 예시
   class Monster {
     constructor(name, hp, attack) {
       this.name = name;
@@ -71,7 +62,6 @@
     }
   }
 
-  // 랜덤 몬스터 생성
   function spawnMonster() {
     const monsters = [
       new Monster('슬라임', 10, 2),
@@ -83,51 +73,50 @@
 
   let currentMonster = null;
 
-  // DOM 요소들
   const hpEl = document.getElementById('hp');
   const attackEl = document.getElementById('attack');
   const positionEl = document.getElementById('position');
   const logEl = document.getElementById('log');
-  const choicesEl = document.getElementById('choices');
+  const infoEl = document.getElementById('info');
 
-  // 로그 추가 함수
   function log(text) {
     logEl.textContent += text + '\n';
     logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // 상태 업데이트
   function updateStatus() {
     hpEl.textContent = player.hp;
     attackEl.textContent = player.attack;
     positionEl.textContent = player.position;
   }
 
-  // 전투 시작
+  // 선택지 관리
+  let choices = [];
+  let selectedIndex = 0;
+
+  function showChoices(newChoices) {
+    choices = newChoices;
+    selectedIndex = 0;
+    renderChoices();
+  }
+
+  function renderChoices() {
+    infoEl.textContent = choices.map((c, i) => (i === selectedIndex ? '> ' : '  ') + c.text).join('\n');
+  }
+
+  // 행동 함수들
   function startBattle() {
     log(`⚔️ 전투 시작! ${currentMonster.name}이(가) 나타났다!`);
     showBattleChoices();
   }
 
-  // 전투 선택지 보여주기
   function showBattleChoices() {
-    choicesEl.innerHTML = '';
-    const attackBtn = document.createElement('button');
-    attackBtn.textContent = '공격하기';
-    attackBtn.onclick = () => playerAttack();
-    choicesEl.appendChild(attackBtn);
-
-    const runBtn = document.createElement('button');
-    runBtn.textContent = '도망가기';
-    runBtn.onclick = () => {
-      log('도망쳤다!');
-      currentMonster = null;
-      showMoveChoices();
-    };
-    choicesEl.appendChild(runBtn);
+    showChoices([
+      { text: '공격하기', action: playerAttack },
+      { text: '도망가기', action: runAway }
+    ]);
   }
 
-  // 플레이어 공격
   function playerAttack() {
     currentMonster.hp -= player.attack;
     log(`당신이 ${currentMonster.name}에게 ${player.attack}의 피해를 입혔다! (남은 HP: ${currentMonster.hp})`);
@@ -140,7 +129,6 @@
     }
   }
 
-  // 몬스터 공격
   function monsterAttack() {
     player.hp -= currentMonster.attack;
     log(`${currentMonster.name}이(가) 당신을 공격했다! ${currentMonster.attack}의 피해! (남은 HP: ${player.hp})`);
@@ -152,39 +140,57 @@
     }
   }
 
-  // 이동 선택지 보여주기
-  function showMoveChoices() {
-    choicesEl.innerHTML = '';
-    const moveBtn = document.createElement('button');
-    moveBtn.textContent = '한 칸 이동하기';
-    moveBtn.onclick = () => {
-      player.position++;
-      updateStatus();
-      // 이동 시 랜덤 몬스터 출현 확률 50%
-      if (Math.random() < 0.5) {
-        currentMonster = spawnMonster();
-        startBattle();
-      } else {
-        log(`맵 위치가 ${player.position}으로 이동했다. 주변이 조용하다...`);
-        showMoveChoices();
-      }
-    };
-    choicesEl.appendChild(moveBtn);
+  function runAway() {
+    log('도망쳤다!');
+    currentMonster = null;
+    showMoveChoices();
   }
 
-  // 게임 오버 처리
+  function showMoveChoices() {
+    showChoices([
+      { text: '한 칸 이동하기', action: moveOneStep }
+    ]);
+  }
+
+  function moveOneStep() {
+    player.position++;
+    updateStatus();
+    if (Math.random() < 0.5) {
+      currentMonster = spawnMonster();
+      startBattle();
+    } else {
+      log(`맵 위치가 ${player.position}으로 이동했다. 주변이 조용하다...`);
+      showMoveChoices();
+    }
+  }
+
   function gameOver() {
     log('💀 당신은 쓰러졌다... 게임 오버!');
-    choicesEl.innerHTML = '';
-    const restartBtn = document.createElement('button');
-    restartBtn.textContent = '다시 시작';
-    restartBtn.onclick = () => location.reload();
-    choicesEl.appendChild(restartBtn);
+    showChoices([
+      { text: '다시 시작', action: () => location.reload() }
+    ]);
   }
 
-  // 게임 시작
+  // 키보드 입력 처리
+  window.addEventListener('keydown', e => {
+    if (choices.length === 0) return;
+
+    if (e.key === 'ArrowLeft') {
+      selectedIndex = (selectedIndex - 1 + choices.length) % choices.length;
+      renderChoices();
+      e.preventDefault();
+    } else if (e.key === 'ArrowRight') {
+      selectedIndex = (selectedIndex + 1) % choices.length;
+      renderChoices();
+      e.preventDefault();
+    } else if (e.key === ' ' || e.key === 'Enter') {
+      choices[selectedIndex].action();
+      e.preventDefault();
+    }
+  });
+
   updateStatus();
-  log('게임에 오신 것을 환영합니다! 이동 버튼을 눌러 시작하세요.');
+  log('게임에 오신 것을 환영합니다! 방향키 ← → 로 선택, 스페이스바(또는 Enter)로 결정하세요.');
   showMoveChoices();
 
 })();
