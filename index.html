@@ -1,49 +1,194 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>유노RPG</title>
-  <script src="https://cdn.jsdelivr.net/npm/phaser@3/dist/phaser.js"></script>
-  <style>
-    body {
-      margin: 0; 
-      background: #000; 
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      color: #0f0;
-      font-family: 'Arial Black', Gadget, sans-serif;
-    }
-    #game-container {
-      width: 800px;
-      height: 600px;
-      border: 4px solid #0f0;
-      box-sizing: border-box;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>유노 로그라이크 RPG</title>
+<style>
+  body {
+    background: #111;
+    color: #eee;
+    font-family: monospace;
+    padding: 10px;
+    max-width: 600px;
+    margin: auto;
+  }
+  #status {
+    border: 1px solid #0f0;
+    padding: 10px;
+    margin-bottom: 10px;
+  }
+  #log {
+    background: #222;
+    height: 200px;
+    overflow-y: auto;
+    padding: 10px;
+    margin-bottom: 10px;
+    white-space: pre-line;
+  }
+  #choices button {
+    margin: 5px;
+    padding: 10px;
+    background: #0f0;
+    border: none;
+    color: #000;
+    font-weight: bold;
+    cursor: pointer;
+  }
+  #choices button:hover {
+    background: #afa;
+  }
+</style>
 </head>
 <body>
-  <div id="game-container"></div>
 
-  <script>
-    const config = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      parent: 'game-container',
-      backgroundColor: '#000000',
-      scene: {
-        preload() {
-          // 필요하면 리소스 미리 불러오기
-        },
-        create() {
-          this.add.text(100, 280, '유노RPG 테스트 성공!', { fontSize: '48px', fill: '#00ff00' });
-        }
+<h1>유노 로그라이크 RPG</h1>
+
+<div id="status">
+  <div>HP: <span id="hp">30</span></div>
+  <div>공격력: <span id="attack">5</span></div>
+  <div>맵 위치: <span id="position">0</span></div>
+</div>
+
+<div id="log"></div>
+
+<div id="choices"></div>
+
+<script>
+(() => {
+  // 플레이어 상태
+  const player = {
+    hp: 30,
+    attack: 5,
+    position: 0,
+  };
+
+  // 몬스터 예시
+  class Monster {
+    constructor(name, hp, attack) {
+      this.name = name;
+      this.hp = hp;
+      this.attack = attack;
+    }
+  }
+
+  // 랜덤 몬스터 생성
+  function spawnMonster() {
+    const monsters = [
+      new Monster('슬라임', 10, 2),
+      new Monster('고블린', 15, 3),
+      new Monster('늑대', 20, 4)
+    ];
+    return monsters[Math.floor(Math.random() * monsters.length)];
+  }
+
+  let currentMonster = null;
+
+  // DOM 요소들
+  const hpEl = document.getElementById('hp');
+  const attackEl = document.getElementById('attack');
+  const positionEl = document.getElementById('position');
+  const logEl = document.getElementById('log');
+  const choicesEl = document.getElementById('choices');
+
+  // 로그 추가 함수
+  function log(text) {
+    logEl.textContent += text + '\n';
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+
+  // 상태 업데이트
+  function updateStatus() {
+    hpEl.textContent = player.hp;
+    attackEl.textContent = player.attack;
+    positionEl.textContent = player.position;
+  }
+
+  // 전투 시작
+  function startBattle() {
+    log(`⚔️ 전투 시작! ${currentMonster.name}이(가) 나타났다!`);
+    showBattleChoices();
+  }
+
+  // 전투 선택지 보여주기
+  function showBattleChoices() {
+    choicesEl.innerHTML = '';
+    const attackBtn = document.createElement('button');
+    attackBtn.textContent = '공격하기';
+    attackBtn.onclick = () => playerAttack();
+    choicesEl.appendChild(attackBtn);
+
+    const runBtn = document.createElement('button');
+    runBtn.textContent = '도망가기';
+    runBtn.onclick = () => {
+      log('도망쳤다!');
+      currentMonster = null;
+      showMoveChoices();
+    };
+    choicesEl.appendChild(runBtn);
+  }
+
+  // 플레이어 공격
+  function playerAttack() {
+    currentMonster.hp -= player.attack;
+    log(`당신이 ${currentMonster.name}에게 ${player.attack}의 피해를 입혔다! (남은 HP: ${currentMonster.hp})`);
+    if (currentMonster.hp <= 0) {
+      log(`${currentMonster.name}을(를) 쓰러뜨렸다!`);
+      currentMonster = null;
+      showMoveChoices();
+    } else {
+      monsterAttack();
+    }
+  }
+
+  // 몬스터 공격
+  function monsterAttack() {
+    player.hp -= currentMonster.attack;
+    log(`${currentMonster.name}이(가) 당신을 공격했다! ${currentMonster.attack}의 피해! (남은 HP: ${player.hp})`);
+    updateStatus();
+    if (player.hp <= 0) {
+      gameOver();
+    } else {
+      showBattleChoices();
+    }
+  }
+
+  // 이동 선택지 보여주기
+  function showMoveChoices() {
+    choicesEl.innerHTML = '';
+    const moveBtn = document.createElement('button');
+    moveBtn.textContent = '한 칸 이동하기';
+    moveBtn.onclick = () => {
+      player.position++;
+      updateStatus();
+      // 이동 시 랜덤 몬스터 출현 확률 50%
+      if (Math.random() < 0.5) {
+        currentMonster = spawnMonster();
+        startBattle();
+      } else {
+        log(`맵 위치가 ${player.position}으로 이동했다. 주변이 조용하다...`);
+        showMoveChoices();
       }
     };
+    choicesEl.appendChild(moveBtn);
+  }
 
-    const game = new Phaser.Game(config);
-  </script>
+  // 게임 오버 처리
+  function gameOver() {
+    log('💀 당신은 쓰러졌다... 게임 오버!');
+    choicesEl.innerHTML = '';
+    const restartBtn = document.createElement('button');
+    restartBtn.textContent = '다시 시작';
+    restartBtn.onclick = () => location.reload();
+    choicesEl.appendChild(restartBtn);
+  }
+
+  // 게임 시작
+  updateStatus();
+  log('게임에 오신 것을 환영합니다! 이동 버튼을 눌러 시작하세요.');
+  showMoveChoices();
+
+})();
+</script>
+
 </body>
 </html>
