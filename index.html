@@ -4,709 +4,174 @@
   <meta charset="UTF-8" />
   <title>유노알피지 (Youknow_rpg)</title>
   <style>
-    body {
-      background-color: #121212;
-      color: #eee;
-      font-family: 'Courier New', monospace;
-      max-width: 700px;
-      margin: 20px auto;
-      padding: 15px;
-      user-select: none;
-    }
-    #game-box {
-      background: #222;
-      padding: 20px;
-      border-radius: 8px;
-      border: 1px solid #555;
-    }
-    #text {
-      min-height: 120px;
-      margin-bottom: 15px;
-      white-space: pre-wrap;
-    }
-    button.choice {
-      background-color: #444;
-      border: none;
-      padding: 10px 15px;
-      margin: 5px 5px 0 0;
-      cursor: pointer;
-      color: #eee;
-      border-radius: 4px;
-      font-size: 14px;
-      user-select: none;
-    }
-    button.choice:hover {
-      background-color: #666;
-    }
-    input#nameField {
-      padding: 8px;
+    body { font-family: Arial, sans-serif; margin: 20px; background: #f0f0f0; }
+    #text { margin-bottom: 20px; font-size: 18px; min-height: 50px; }
+    #choices button {
+      display: block;
+      margin: 5px 0;
+      padding: 10px;
+      width: 100%;
       font-size: 16px;
-      border-radius: 4px;
-      border: none;
-      width: 150px;
-      margin-right: 10px;
+      cursor: pointer;
     }
     #status {
-      background: #1b1b1b;
-      padding: 10px;
-      margin-top: 15px;
-      border-radius: 6px;
-      font-size: 14px;
-      line-height: 1.4em;
-      white-space: pre-line;
-    }
-    #stat-allocation {
-      background: #2a2a2a;
-      padding: 15px;
-      margin-top: 15px;
-      border-radius: 6px;
-      display: none;
-    }
-    #stat-allocation div {
-      margin-bottom: 6px;
-    }
-    #stat-allocation button {
-      margin-left: 8px;
-      width: 28px;
-      height: 28px;
-      vertical-align: middle;
-    }
-    #skill-levelup {
-      background: #2a2a2a;
-      padding: 15px;
-      margin-top: 15px;
-      border-radius: 6px;
-      display: none;
-    }
-    #skill-levelup button {
-      margin-left: 8px;
-      width: 28px;
-      height: 28px;
-      vertical-align: middle;
+      background: white; padding: 10px; margin-bottom: 20px;
+      border-radius: 5px;
+      max-width: 400px;
     }
     #log {
-      background: #1a1a1a;
-      margin-top: 15px;
-      padding: 10px;
-      height: 100px;
+      max-height: 150px;
       overflow-y: auto;
-      font-size: 12px;
-      border-radius: 6px;
-      border: 1px solid #444;
+      background: #222;
+      color: #eee;
+      padding: 10px;
+      font-size: 14px;
+      border-radius: 5px;
+      max-width: 400px;
     }
   </style>
 </head>
 <body>
-
   <h1>유노알피지 (Youknow_rpg)</h1>
 
-  <div id="game-box">
-    <div id="text"></div>
-    <div id="choices"></div>
-
-    <div id="stat-allocation">
-      <h3>스탯 포인트 할당 (남은 포인트: <span id="remainingStatPoints"></span>)</h3>
-      <div id="stat-buttons"></div>
-      <button onclick="applyStatPoints()">적용</button>
-      <button onclick="cancelStatPoints()">취소</button>
-    </div>
-
-    <div id="skill-levelup">
-      <h3>스킬 레벨업 (남은 스킬포인트: <span id="remainingSkillPoints"></span>)</h3>
-      <div id="skill-buttons"></div>
-      <button onclick="closeSkillLevelUp()">닫기</button>
-    </div>
-
-    <div id="status"></div>
-    <div id="log"></div>
+  <div id="status">
+    <div>레벨: <span id="level"></span></div>
+    <div>경험치: <span id="exp"></span></div>
+    <div>체력: <span id="hp"></span></div>
+    <div>기력: <span id="energy"></span></div>
+    <div>마나: <span id="mana"></span></div>
+    <div>스탯 포인트: <span id="statPoints"></span></div>
+    <div>힘: <span id="str"></span>, 민첩: <span id="dex"></span>, 지능: <span id="int"></span>, 운: <span id="luck"></span></div>
   </div>
 
-  <script>
-    // --- 플레이어 정보 ---
-    const player = {
-      level: 1,
-      exp: 0,
-      expToNextLevel: 100,
+  <div id="text">여기에 게임 텍스트가 표시됩니다.</div>
+  <div id="choices"></div>
 
-      stats: {
-        hp: 100,
-        defense: 10,
-        atk: 15,
-        matk: 10,
-        energy: 20,
-        mana: 30,
-        speed: 10,
-        crit: 5,
-        luck: 0,
-      },
+  <button id="saveBtn">게임 저장</button>
+  <button id="loadBtn">게임 불러오기</button>
 
-      hpCurrent: 100,
-      manaCurrent: 30,
-      energyCurrent: 20,
+  <div id="log"></div>
 
-      statPoints: 0,
-      skillPoints: 0,
+<script>
+  // 플레이어 상태 (초기값)
+  const player = {
+    stage: 0,
+    hpMax: 100,
+    hpCurrent: 100,
+    energyMax: 50,
+    energyCurrent: 50,
+    manaMax: 30,
+    manaCurrent: 30,
+    exp: 0,
+    level: 1,
+    expToNext: 100,
+    statPoints: 0,
+    stats: { str: 5, dex: 5, int: 5, luck: 0 },
+    skills: { fireball: 0, slash: 0 }
+  };
 
-      skills: {
-        fireball: 1,
-        slash: 1,
-      },
+  // 스테이지 데이터 (간략화)
+  const stages = [
+    { id: 1, text: "스테이지 1: 시작!", choices:[
+      {text:"앞으로 간다", next:"nextStage", probability:1}
+    ]},
+    { id: 5, text: "보스 스테이지! 강력한 적 등장!", choices:[
+      {text:"화염구 사용", next:"useFireball", probability:1},
+      {text:"베기 공격", next:"useSlash", probability:1}
+    ], specialEvent:true}
+  ];
 
-      stage: 1,
-    };
+  const textDiv = document.getElementById("text");
+  const choicesDiv = document.getElementById("choices");
 
-    // --- 임시 스탯 포인트 할당 ---
-    let tempStatPoints = {
-      hp: 0, defense: 0, atk: 0, matk: 0,
-      energy: 0, mana: 0, speed: 0, crit: 0, luck: 0,
-    };
+  function showText(text) {
+    textDiv.innerText = text;
+  }
 
-    // --- 로그 출력 ---
-    function log(text) {
-      const logDiv = document.getElementById("log");
-      logDiv.innerText += text + "\n";
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
+  function showChoices(choices) {
+    choicesDiv.innerHTML = "";
+    choices.forEach(choice => {
+      const btn = document.createElement("button");
+      btn.innerText = choice.text;
+      btn.onclick = () => onChoiceSelected(choice);
+      choicesDiv.appendChild(btn);
+    });
+  }
 
-    // --- 상태창 업데이트 ---
-    function updateStatus() {
-      const s = player.stats;
-      const statusDiv = document.getElementById("status");
-      statusDiv.innerText = 
-        `레벨: ${player.level} (경험치: ${player.exp} / ${player.expToNextLevel})\n` +
-        `스탯 포인트: ${player.statPoints} | 스킬 포인트: ${player.skillPoints}\n` +
-        `체력: ${player.hpCurrent} / ${s.hp}\n` +
-        `마나: ${player.manaCurrent} / ${s.mana}\n` +
-        `기력: ${player.energyCurrent} / ${s.energy}\n` +
-        `공격력: ${s.atk}\n` +
-        `마법공격력: ${s.matk}\n` +
-        `방어력: ${s.defense}\n` +
-        `속도: ${s.speed}\n` +
-        `치명타확률: ${s.crit}\n` +
-        `운: ${s.luck}\n` +
-        `스킬 레벨: 화염구(${player.skills.fireball}), 베기(${player.skills.slash})\n` +
-        `현재 스테이지: ${player.stage} / 10`;
-    }
-
-    // --- 경험치 추가 및 레벨업 처리 ---
-    function gainExp(amount) {
-      player.exp += amount;
-      log(`경험치 ${amount} 획득!`);
-      while (player.exp >= player.expToNextLevel) {
-        player.exp -= player.expToNextLevel;
-        levelUp();
-      }
-      updateStatus();
-    }
-
-    function levelUp() {
-      player.level++;
-      player.expToNextLevel = Math.floor(player.expToNextLevel * 1.5);
-      player.statPoints += 5;
-      player.skillPoints += 2;
-      player.hpCurrent = player.stats.hp;
-      player.manaCurrent = player.stats.mana;
-      player.energyCurrent = player.stats.energy;
-
-      log(`🎉 레벨업! 레벨 ${player.level} 달성! 스탯 포인트 +5, 스킬 포인트 +2 획득!`);
-      updateStatus();
-      showStatAllocation();
-    }
-
-    // --- 스탯 포인트 할당 UI ---
-    function showStatAllocation() {
-      if (player.statPoints <= 0) return;
-      document.getElementById("stat-allocation").style.display = "block";
-      document.getElementById("remainingStatPoints").innerText = player.statPoints;
-
-      const container = document.getElementById("stat-buttons");
-      container.innerHTML = "";
-
-      for (const stat in tempStatPoints) {
-        const div = document.createElement("div");
-        div.innerHTML = `
-          ${stat.toUpperCase()}: ${player.stats[stat]} + <span id="temp-${stat}">0</span>
-          <button onclick="addPoint('${stat}')">+</button>
-          <button onclick="removePoint('${stat}')">-</button>
-        `;
-        container.appendChild(div);
-      }
-    }
-
-    function addPoint(stat) {
-      if (player.statPoints > 0) {
-        tempStatPoints[stat]++;
-        player.statPoints--;
-        updateStatAllocationUI();
-      }
-    }
-
-    function removePoint(stat) {
-      if (tempStatPoints[stat] > 0) {
-        tempStatPoints[stat]--;
-        player.statPoints++;
-        updateStatAllocationUI();
-      }
-    }
-
-    function updateStatAllocationUI() {
-      document.getElementById("remainingStatPoints").innerText = player.statPoints;
-      for (const stat in tempStatPoints) {
-        document.getElementById(`temp-${stat}`).innerText = tempStatPoints[stat];
-      }
-    }
-
-    function applyStatPoints() {
-      for (const stat in tempStatPoints) {
-        player.stats[stat] += tempStatPoints[stat];
-        tempStatPoints[stat] = 0;
-      }
-      document.getElementById("stat-allocation").style.display = "none";
-      updateStatus();
-    }
-
-    function cancelStatPoints() {
-      for (const stat in tempStatPoints) {
-        player.statPoints += tempStatPoints[stat];
-        tempStatPoints[stat] = 0;
-      }
-      document.getElementById("stat-allocation").style.display = "none";
-      updateStatus();
-    }
-
-    // --- 스킬 레벨업 UI ---
-    function showSkillLevelUp() {
-      if (player.skillPoints <= 0) return;
-      document.getElementById("skill-levelup").style.display = "block";
-      document.getElementById("remainingSkillPoints").innerText = player.skillPoints;
-
-      const container = document.getElementById("skill-buttons");
-      container.innerHTML = "";
-
-      for (const skill in player.skills) {
-        const lvl = player.skills[skill];
-        const div = document.createElement("div");
-        div.innerHTML = `
-          ${skill.toUpperCase()} (Lv. ${lvl})
-          <button onclick="levelUpSkill('${skill}')">+</button>
-        `;
-        container.appendChild(div);
-      }
-    }
-
-    function levelUpSkill(skillName) {
-      if (player.skillPoints <= 0) {
-        log("스킬 포인트가 부족합니다.");
-        return;
-      }
-      player.skills[skillName]++;
-      player.skillPoints--;
-      log(`🎯 ${skillName} 스킬 레벨업! 현재 레벨: ${player.skills[skillName]}`);
-      updateStatus();
-      showSkillLevelUp();
-    }
-
-    function closeSkillLevelUp() {
-      document.getElementById("skill-levelup").style.display = "none";
-    }
-
-    // --- 선택지 확률 계산 및 처리 ---
-    function chooseRandom(choices) {
-      // choices: [{text, next, probability}]
-      // 확률 합이 1이 아니어도 됨 (내부 계산)
-      let totalProb = choices.reduce((sum, c) => sum + (c.probability || 1), 0);
-      let rand = Math.random() * totalProb;
-      for (const c of choices) {
-        rand -= (c.probability || 1);
-        if (rand <= 0) return c;
-      }
-      return choices[choices.length-1];
-    }
-
-    // --- 스테이지별 데이터 및 이벤트 ---
-    const stages = [
-      { id:1, text:"스테이지 1: 숲속에서 시작합니다.", choices:[
-        {text:"앞으로 간다", next:"nextStage", probability:1},
-        {text:"주위를 살핀다", next:"lookAround", probability:0.5}
-      ]},
-      { id:2, text:"스테이지 2: 작은 마을에 도착했다.", choices:[
-        {text:"상점 방문", next:"shop", probability:1},
-        {text:"마을 주민과 대화", next:"talkNPC", probability:1}
-      ]},
-      { id:3, text:"스테이지 3: 늪지를 건넌다.", choices:[
-        {text:"빠르게 건넌다", next:"fastCross", probability:1},
-        {text:"조심스럽게 건넌다", next:"carefulCross", probability:1}
-      ]},
-      { id:4, text:"스테이지 4: 동굴 입구 발견.", choices:[
-        {text:"동굴 탐험", next:"exploreCave", probability:1},
-        {text:"돌아간다", next:"goBack", probability:1}
-      ]},
-      { id:5, text:"보스 스테이지! 거대한 곰과 맞선다.", choices:[
-        {text:"화염구 사용", next:"useFireball", probability:1},
-        {text:"베기 공격", next:"useSlash", probability:1},
-        {text:"도망친다", next:"runAway", probability:0.2}
-      ], specialEvent:true},
-      // 6~10 스테이지는 예시로 간단하게...
-      { id:6, text:"스테이지 6: 고대 유적지 발견.", choices:[
-        {text:"탐험한다", next:"exploreRuins", probability:1},
-        {text:"휴식한다", next:"rest", probability:1}
-      ]},
-      { id:7, text:"스테이지 7: 강을 건넌다.", choices:[
-        {text:"배를 만든다", next:"buildBoat", probability:1},
-        {text:"헤엄친다", next:"swim", probability:1}
-      ]},
-      { id:8, text:"스테이지 8: 늑대 무리와 조우.", choices:[
-        {text:"화염구 사용", next:"useFireball", probability:1},
-        {text:"베기 공격", next:"useSlash", probability:1},
-        {text:"도망친다", next:"runAway", probability:0.3}
-      ]},
-      { id:9, text:"스테이지 9: 고대 마법진 앞.", choices:[
-        {text:"마법진 조사", next:"investigateRune", probability:1},
-        {text:"무시하고 간다", next:"ignoreRune", probability:1}
-      ]},
-      { id:10, text:"최종 보스 스테이지! 드래곤과 결전.", choices:[
-        {text:"화염구 사용", next:"useFireball", probability:1},
-        {text:"베기 공격", next:"useSlash", probability:1},
-        {text:"도망친다", next:"runAway", probability:0.1}
-      ], specialEvent:true},
-    ];
-
-    // --- 특수 이벤트 함수 ---
-    function specialEvent(stageId) {
-      if (stageId === 5) {
-        log("🛒 5 스테이지 특수 이벤트: 상점 방문 가능!");
-        showShop();
-      } else if (stageId === 10) {
-        log("🔥 10 스테이지 특수 이벤트: 최종 보스와 대결!");
-        // 보스 전용 처리 가능
-        showBossFight();
-      }
-    }
-
-    // --- 샘플 상점 구현 ---
-    function showShop() {
-      showText("상점에 들어왔습니다. (기능은 추후 확장 예정)");
-      showChoices([
-        {text:"스탯 포인트 5 획득 (무료)", next:"gainStatPoints"},
-        {text:"나가기", next:"nextStage"}
-      ]);
-    }
-
-    // --- 보스 전투 샘플 ---
-    function showBossFight() {
-      showText("최종 보스와 마주쳤다! 강력한 공격을 준비하라!");
-      showChoices([
-        {text:"화염구 사용", next:"useFireball"},
-        {text:"베기 공격", next:"useSlash"},
-        {text:"도망친다", next:"runAway"},
-      ]);
-    }
-
-    // --- 주요 함수: 텍스트 출력과 선택지 생성 ---
-    const textDiv = document.getElementById("text");
-    const choicesDiv = document.getElementById("choices");
-
-    function showText(text) {
-      textDiv.innerText = text;
-    }
-
-    function showChoices(choices) {
-      choicesDiv.innerHTML = "";
-      choices.forEach((choice, idx) => {
-        const btn = document.createElement("button");
-        btn.className = "choice";
-        btn.innerText = choice.text;
-        btn.onclick = () => onChoiceSelected(choice);
-        choicesDiv.appendChild(btn);
-      });
-    }
-
-    // --- 선택지 선택 처리 ---
-    function onChoiceSelected(choice) {
-      if (choice.next === "nextStage") {
-        nextStage();
-      } else if (choice.next === "lookAround") {
-        lookAround();
-      } else if (choice.next === "shop") {
-        showShop();
-      } else if (choice.next === "talkNPC") {
-        talkNPC();
-      } else if (choice.next === "fastCross") {
-        fastCross();
-      } else if (choice.next === "carefulCross") {
-        carefulCross();
-      } else if (choice.next === "exploreCave") {
-        exploreCave();
-      } else if (choice.next === "goBack") {
-        goBack();
-      } else if (choice.next === "useFireball") {
-        useFireball();
-      } else if (choice.next === "useSlash") {
-        useSlash();
-      } else if (choice.next === "runAway") {
-        runAway();
-      } else if (choice.next === "gainStatPoints") {
-        player.statPoints += 5;
-        log("스탯 포인트 5점 획득!");
-        updateStatus();
-        showShop();
-      } else if (choice.next === "exploreRuins") {
-        exploreRuins();
-      } else if (choice.next === "rest") {
-        rest();
-      } else if (choice.next === "buildBoat") {
-        buildBoat();
-      } else if (choice.next === "swim") {
-        swim();
-      } else if (choice.next === "investigateRune") {
-        investigateRune();
-      } else if (choice.next === "ignoreRune") {
-        ignoreRune();
-      } else {
-        showText("아직 구현되지 않은 기능입니다.");
-        showChoices([{text:"다음", next:"nextStage"}]);
-      }
-    }
-
-    // --- 각 스테이지 진행 함수들 (샘플 구현) ---
-    function nextStage() {
-      player.stage++;
-      if (player.stage > 10) {
-        showText("🎉 모든 스테이지를 클리어했습니다! 축하합니다!");
-        showChoices([]);
-        return;
-      }
-
-      const stageData = stages.find(s => s.id === player.stage);
-      if (!stageData) {
-        showText("스테이지 데이터가 없습니다.");
-        showChoices([]);
-        return;
-      }
-
-      showText(stageData.text);
-      showChoices(stageData.choices);
-
-      // 특수 이벤트 체크 (5,10 스테이지)
-      if (player.stage % 5 === 0 && stageData.specialEvent) {
-        specialEvent(player.stage);
-      }
-    }
-
-    function lookAround() {
-      const luck = player.stats.luck;
-      const chanceGood = 0.5 + luck * 0.02; // 운이 높을수록 이로운 확률 증가
-      if (Math.random() < chanceGood) {
-        gainExp(20);
-        showText("주위를 살펴 좋은 아이템을 발견했다! 경험치 20 획득!");
-      } else {
-        player.hpCurrent -= 10;
-        if (player.hpCurrent < 0) player.hpCurrent = 0;
-        showText("주위를 살피다 함정에 걸려 체력 10 감소!");
-      }
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function talkNPC() {
-      gainExp(10);
-      showText("마을 주민과 대화하며 정보를 얻었다. 경험치 10 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function fastCross() {
-      player.energyCurrent -= 5;
-      if (player.energyCurrent < 0) player.energyCurrent = 0;
-      showText("빠르게 늪지를 건넜다. 기력 5 감소.");
-      updateStatus();
-      gainExp(15);
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function carefulCross() {
-      player.energyCurrent -= 10;
-      if (player.energyCurrent < 0) player.energyCurrent = 0;
-      showText("조심스럽게 늪지를 건넜다. 기력 10 감소, 그러나 안전함.");
-      updateStatus();
-      gainExp(20);
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function exploreCave() {
-      gainExp(25);
-      showText("동굴을 탐험하며 경험치를 25 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function goBack() {
-      player.hpCurrent -= 5;
-      if (player.hpCurrent < 0) player.hpCurrent = 0;
-      showText("돌아가다 미끄러져 체력 5 감소.");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function useFireball() {
-      if (player.manaCurrent < 10) {
-        showText("마나가 부족합니다!");
-        showChoices([{text:"다시 선택", next:"nextStage"}]);
-        return;
-      }
-      player.manaCurrent -= 10;
-      gainExp(30 + player.skills.fireball * 5);
-      showText("화염구를 사용해 적을 공격했다! 경험치 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function useSlash() {
-      gainExp(15 + player.skills.slash * 3);
-      showText("베기 공격으로 적을 공격했다! 경험치 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function runAway() {
-      const successChance = 0.5 + player.stats.luck * 0.05;
-      if (Math.random() < successChance) {
-        showText("성공적으로 도망쳤다!");
-        showChoices([{text:"계속", next:"nextStage"}]);
-      } else {
-        player.hpCurrent -= 20;
-        if (player.hpCurrent < 0) player.hpCurrent = 0;
-        showText("도망치다 실패해 체력 20 감소!");
-        updateStatus();
-        showChoices([{text:"계속", next:"nextStage"}]);
-      }
-    }
-
-    function exploreRuins() {
-      gainExp(20);
-      showText("고대 유적지를 탐험하며 경험치 20 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function rest() {
-      player.hpCurrent += 30;
-      if (player.hpCurrent > player.hpMax) player.hpCurrent = player.hpMax;
-      player.energyCurrent += 20;
-      if (player.energyCurrent > player.energyMax) player.energyCurrent = player.energyMax;
-      showText("휴식을 취해 체력과 기력을 회복했다.");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function buildBoat() {
-      gainExp(15);
-      showText("배를 만들어 강을 건넜다. 경험치 15 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function swim() {
-      player.hpCurrent -= 15;
-      if (player.hpCurrent < 0) player.hpCurrent = 0;
-      gainExp(10);
-      showText("강을 헤엄쳐 건넜다. 체력 15 감소, 경험치 10 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function investigateRune() {
-      gainExp(30);
-      showText("마법진을 조사해 강력한 마법 에너지를 얻었다. 경험치 30 획득!");
-      updateStatus();
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    function ignoreRune() {
-      showText("마법진을 무시하고 지나쳤다.");
-      showChoices([{text:"계속", next:"nextStage"}]);
-    }
-
-    // --- 경험치 획득 및 레벨업 처리 ---
-    function gainExp(amount) {
-      player.exp += amount;
-      log(`경험치 ${amount} 획득!`);
-      while (player.exp >= player.expToNext) {
-        player.exp -= player.expToNext;
-        player.level++;
-        player.expToNext = Math.floor(player.expToNext * 1.5);
-        player.statPoints += 5;
-        log(`레벨업! 현재 레벨: ${player.level}, 스탯 포인트 5 획득.`);
-      }
-      updateStatus();
-    }
-
-    // --- 상태창 업데이트 ---
-    function updateStatus() {
-      document.getElementById("hp").innerText = player.hpCurrent;
-      document.getElementById("energy").innerText = player.energyCurrent;
-      document.getElementById("mana").innerText = player.manaCurrent;
-      document.getElementById("level").innerText = player.level;
-      document.getElementById("exp").innerText = `${player.exp} / ${player.expToNext}`;
-      document.getElementById("statPoints").innerText = player.statPoints;
-      document.getElementById("str").innerText = player.stats.str;
-      document.getElementById("dex").innerText = player.stats.dex;
-      document.getElementById("int").innerText = player.stats.int;
-      document.getElementById("luck").innerText = player.stats.luck;
-    }
-
-    // --- 로그 출력 ---
-    function log(message) {
-      const logDiv = document.getElementById("log");
-      const p = document.createElement("p");
-      p.innerText = message;
-      logDiv.appendChild(p);
-      logDiv.scrollTop = logDiv.scrollHeight;
-    }
-
-    // --- 초기화 및 시작 ---
-    function init() {
-      player.stage = 0;
-      player.hpCurrent = player.hpMax;
-      player.energyCurrent = player.energyMax;
-      player.manaCurrent = player.manaMax;
-      player.exp = 0;
-      player.level = 1;
-      player.expToNext = 100;
-      player.statPoints = 0;
-      player.stats = {str:5, dex:5, int:5, luck:5};
-      player.skills = {fireball:0, slash:0};
-      updateStatus();
+  function onChoiceSelected(choice) {
+    if (choice.next === "nextStage") {
       nextStage();
-      log("게임 시작!");
+    } else if (choice.next === "useFireball") {
+      useFireball();
+    } else if (choice.next === "useSlash") {
+      useSlash();
+    } else {
+      showText("아직 구현되지 않은 선택지입니다.");
     }
+  }
 
-    // --- 저장/불러오기 기능 ---
-    function saveGame() {
-      localStorage.setItem("gameSave", JSON.stringify(player));
-      log("게임 저장 완료.");
+  function nextStage() {
+    player.stage++;
+    const stageData = stages.find(s => s.id === player.stage);
+    if (!stageData) {
+      showText("게임 완료! 축하합니다!");
+      choicesDiv.innerHTML = "";
+      return;
     }
+    showText(stageData.text);
+    showChoices(stageData.choices);
+  }
 
-    function loadGame() {
-      const saved = localStorage.getItem("gameSave");
-      if (saved) {
-        Object.assign(player, JSON.parse(saved));
-        updateStatus();
-        showText(`게임을 불러왔습니다. 현재 스테이지: ${player.stage}`);
-        showChoices(stages.find(s => s.id === player.stage).choices);
-        log("게임 불러오기 완료.");
-      } else {
-        log("저장된 게임이 없습니다.");
-      }
+  function useFireball() {
+    if (player.manaCurrent < 10) {
+      showText("마나가 부족합니다!");
+      showChoices([{text:"돌아가기", next:"nextStage"}]);
+      return;
     }
+    player.manaCurrent -= 10;
+    showText("화염구를 사용해 적을 공격했다!");
+    updateStatus();
+    showChoices([{text:"계속", next:"nextStage"}]);
+  }
 
-    // --- HTML 버튼 이벤트 연결 ---
-    document.getElementById("saveBtn").onclick = saveGame;
-    document.getElementById("loadBtn").onclick = loadGame;
+  function useSlash() {
+    showText("베기 공격을 사용했다!");
+    showChoices([{text:"계속", next:"nextStage"}]);
+  }
 
-    // --- 게임 시작 ---
-    init();
+  function updateStatus() {
+    document.getElementById("hp").innerText = player.hpCurrent;
+    document.getElementById("energy").innerText = player.energyCurrent;
+    document.getElementById("mana").innerText = player.manaCurrent;
+    document.getElementById("level").innerText = player.level;
+    document.getElementById("exp").innerText = `${player.exp} / ${player.expToNext}`;
+    document.getElementById("statPoints").innerText = player.statPoints;
+    document.getElementById("str").innerText = player.stats.str;
+    document.getElementById("dex").innerText = player.stats.dex;
+    document.getElementById("int").innerText = player.stats.int;
+    document.getElementById("luck").innerText = player.stats.luck;
+  }
 
-  </script>
+  document.getElementById("saveBtn").onclick = () => {
+    localStorage.setItem("youknow_rpg_save", JSON.stringify(player));
+    alert("게임이 저장되었습니다.");
+  };
+
+  document.getElementById("loadBtn").onclick = () => {
+    const saved = localStorage.getItem("youknow_rpg_save");
+    if (saved) {
+      Object.assign(player, JSON.parse(saved));
+      updateStatus();
+      alert("게임을 불러왔습니다.");
+      nextStage();
+    } else {
+      alert("저장된 게임이 없습니다.");
+    }
+  };
+
+  // 초기화 및 시작
+  updateStatus();
+  nextStage();
+</script>
 </body>
 </html>
