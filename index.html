@@ -1,91 +1,516 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <title>유노알피지 (Youknow RPG)</title>
-  <style>
-    body {
-      background-color: #1e1e1e;
-      color: #f0f0f0;
-      font-family: 'Courier New', monospace;
-      padding: 20px;
-      text-align: center;
-    }
-    #game-box {
-      border: 2px solid #888;
-      padding: 20px;
-      max-width: 600px;
-      margin: 0 auto 30px auto;
-      background-color: #2a2a2a;
-      border-radius: 8px;
-      min-height: 320px;
-    }
-    .choice {
-      display: inline-block;
-      margin: 8px 10px;
-      background-color: #444;
-      color: #fff;
-      border: none;
-      padding: 12px 20px;
-      font-size: 16px;
-      cursor: pointer;
-      border-radius: 6px;
-      user-select: none;
-      transition: background-color 0.2s, transform 0.1s;
-    }
-    .choice:hover {
-      background-color: #666;
-    }
-    .choice:active {
-      background-color: #333;
-      transform: scale(0.95);
-    }
-    img {
-      width: 100%;
-      max-height: 200px;
-      object-fit: cover;
-      border-radius: 8px;
-      margin-bottom: 15px;
-    }
-    #stat-upgrade, #skill-upgrade {
-      margin-top: 20px;
-      padding: 15px 10px;
-      background-color: #444;
-      border-radius: 6px;
-      max-width: 600px;
-      margin-left: auto;
-      margin-right: auto;
-      color: #cceeff;
-      font-weight: bold;
-      text-align: left;
-    }
-    input[type="text"] {
-      font-size: 16px;
-      padding: 6px;
-      border-radius: 4px;
-      border: none;
-      margin-right: 10px;
-    }
-  </style>
+<meta charset="UTF-8" />
+<title>유노알피지 (Youknow RPG)</title>
+<style>
+  body {
+    background-color: #1e1e1e;
+    color: #eee;
+    font-family: 'Courier New', monospace;
+    padding: 20px;
+    text-align: center;
+  }
+  #game-box {
+    border: 2px solid #888;
+    padding: 20px;
+    max-width: 700px;
+    margin: 0 auto 20px auto;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    min-height: 360px;
+  }
+  #text img {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+    margin: 10px 0;
+  }
+  .choice {
+    display: inline-block;
+    margin: 6px 10px;
+    background-color: #444;
+    color: #fff;
+    border: none;
+    padding: 12px 22px;
+    font-size: 16px;
+    cursor: pointer;
+    border-radius: 6px;
+    user-select: none;
+    transition: background-color 0.2s, transform 0.1s;
+  }
+  .choice:hover {
+    background-color: #666;
+  }
+  .choice:active {
+    background-color: #333;
+    transform: scale(0.95);
+  }
+  #stat-upgrade, #skill-upgrade {
+    margin: 20px auto;
+    padding: 15px 10px;
+    background-color: #444;
+    border-radius: 6px;
+    max-width: 700px;
+    color: #cceeff;
+    font-weight: bold;
+    text-align: left;
+  }
+  #stat-upgrade button, #skill-upgrade button {
+    margin: 4px;
+  }
+  input[type="text"] {
+    font-size: 16px;
+    padding: 6px;
+    border-radius: 4px;
+    border: none;
+    margin-right: 10px;
+    width: 180px;
+  }
+  #player-stats {
+    max-width: 700px;
+    margin: 10px auto;
+    background-color: #333;
+    border-radius: 8px;
+    padding: 10px;
+    text-align: left;
+    font-size: 14px;
+  }
+  #player-stats span {
+    display: inline-block;
+    width: 110px;
+  }
+</style>
 </head>
 <body>
-  <h1>유노알피지 (Youknow RPG)</h1>
-  <div id="game-box">
-    <div id="text"></div>
-    <div id="choices"></div>
-  </div>
 
-  <div id="stat-upgrade"></div>
-  <div id="skill-upgrade"></div>
+<h1>유노알피지 (Youknow RPG)</h1>
 
-  <script>
-    let player = {
+<div id="game-box">
+  <div id="text"></div>
+  <div id="choices"></div>
+</div>
+
+<div id="player-stats"></div>
+
+<div id="stat-upgrade"></div>
+<div id="skill-upgrade"></div>
+
+<script>
+  // 플레이어 객체
+  let player = {
+    name: "모험가",
+    level: 1,
+    exp: 0,
+    expToNext: 100,
+    statPoints: 0,
+    skillPoints: 0,
+    stage: 1,
+    maxStage: 10,
+    stats: {
+      hp: 100,
+      maxHp: 100,
+      defense: 10,
+      attack: 15,
+      magicAttack: 10,
+      stamina: 20,
+      maxStamina: 20,
+      mana: 30,
+      maxMana: 30,
+      speed: 10,
+      critRate: 5,
+      luck: 0
+    },
+    skills: {
+      fireball: { level: 0, maxLevel: 5, requiredStat: 'magicAttack', basePower: 20 },
+      slash: { level: 0, maxLevel: 5, requiredStat: 'attack', basePower: 15 },
+      heal: { level: 0, maxLevel: 3, requiredStat: 'mana', basePower: 25 }
+    },
+    learnedMagic: false,
+    learnedWarrior: false
+  };
+
+  // 경험치 테이블 (1~10레벨)
+  const expTable = [0, 100, 200, 350, 550, 800, 1100, 1450, 1850, 2300, 2800];
+
+  // 유틸: 확률 기반 선택
+  function chooseWeighted(choices) {
+    // choices = [{text, next, weight}]
+    const total = choices.reduce((sum, c) => sum + (c.weight || 1), 0);
+    let r = Math.random() * total;
+    for (const c of choices) {
+      r -= (c.weight || 1);
+      if (r <= 0) return c;
+    }
+    return choices[choices.length -1];
+  }
+
+  // 운 스탯에 따른 이벤트 운/불운 가중치
+  function luckModifier() {
+    if (player.stats.luck > 0) return 1 + player.stats.luck * 0.02;
+    else return 1 + player.stats.luck * 0.05; // 불운일수록 불리함 가중치
+  }
+
+  // 씬 모음
+  const scenes = {
+    intro: {
+      text: `깊은 숲속에서 눈을 떴습니다. 이름을 입력하세요: <br>
+      <input type='text' id='nameField' maxlength='10' placeholder='이름 입력'><button class='choice' onclick='setName()'>확인</button>`,
+      choices: []
+    },
+    tutorial: {
+      text: `
+        <h2>튜토리얼</h2>
+        <p>이 게임은 키보드 숫자키(1~9)로 선택지를 고릅니다.</p>
+        <p>레벨업 시 스탯포인트와 스킬포인트가 주어집니다.</p>
+        <p>스탯과 스킬을 적절히 올리며 모험을 진행하세요.</p>
+        <button class='choice' onclick='startStage()'>모험 시작</button>
+      `,
+      choices: []
+    },
+    specialEvent: {
+      text: (stage) => {
+        if (stage % 10 === 0) {
+          return `<h2>대보스 등장!</h2>
+            <p>스테이지 ${stage}의 강력한 보스와 맞서 싸우세요!</p>
+            <img src='https://i.imgur.com/SbZGQNN.png' alt='보스'>`;
+        } else {
+          return `<h2>상점</h2>
+            <p>스테이지 ${stage} 도중 만난 상점입니다. 스탯포인트나 스킬포인트를 더 얻을 수도 있습니다.</p>
+            <img src='https://i.imgur.com/Ki0A9hM.png' alt='상점'>`;
+        }
+      },
+      choices: [
+        { text: "계속 진행", next: "stage" }
+      ]
+    },
+    stage: {
+      text: (stage) => {
+        // 상황에 따른 이미지와 텍스트 간단 예시
+        const images = [
+          "https://i.imgur.com/dcGgKZC.png",
+          "https://i.imgur.com/xfndOdJ.png",
+          "https://i.imgur.com/Ki0A9hM.png"
+        ];
+        return `스테이지 ${stage}<br>
+          숲속을 탐험 중입니다...<br>
+          <img src='${images[stage % images.length]}' alt='스테이지 이미지'>`;
+      },
+      choices: [] // 동적 생성 예정
+    },
+    gameOver: {
+      text: () => `<h2>게임 오버</h2>
+        <p>${player.name}님의 모험이 끝났습니다.</p>
+        <button class='choice' onclick='restartGame()'>다시 시작</button>`,
+      choices: []
+    },
+    victory: {
+      text: () => `<h2>모험 성공!</h2>
+        <p>${player.name}님, 모든 스테이지를 클리어하셨습니다!</p>
+        <button class='choice' onclick='restartGame()'>다시 시작</button>`,
+      choices: []
+    }
+  };
+
+  // 스테이지 선택지 생성 및 확률에 따른 분기
+  function generateStageChoices(stage) {
+    // 예시 선택지와 확률 (운 스탯 영향 반영)
+    let baseChoices = [
+      { text: "위험한 길로 간다", next: "battle", weight: 1 },
+      { text: "안전한 길로 간다", next: "safeEvent", weight: 3 },
+      { text: "상점 방문 시도", next: "tryShop", weight: 1 }
+    ];
+
+    // 운 스탯에 따라 위험한 길 확률 상승, 안전한 길 확률 하락
+    const luckMod = luckModifier();
+    baseChoices = baseChoices.map(c => {
+      if (c.text === "위험한 길로 간다") c.weight *= luckMod;
+      if (c.text === "안전한 길로 간다") c.weight /= luckMod;
+      return c;
+    });
+
+    // 선택지 버튼 만들기
+    const choicesDiv = document.getElementById('choices');
+    choicesDiv.innerHTML = '';
+    baseChoices.forEach((choice, idx) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice';
+      btn.innerText = `${idx+1}. ${choice.text}`;
+      btn.onclick = () => {
+        // 확률 분기 처리
+        const selected = chooseWeighted([choice]); // 단일 선택지인데 weight 고려
+        if (selected.next === "battle") {
+          startBattle();
+        } else if (selected.next === "safeEvent") {
+          safeEvent();
+        } else if (selected.next === "tryShop") {
+          if (player.stage % 5 === 0) {
+            // 상점 이벤트
+            renderScene("specialEvent");
+          } else {
+            // 실패하면 안전 이벤트로 전환
+            safeEvent();
+          }
+        }
+      };
+      choicesDiv.appendChild(btn);
+    });
+  }
+
+  // 전투 시작 (간단 예시)
+  function startBattle() {
+    // 적 스탯 (단순화)
+    const enemy = {
+      name: "야생 몬스터",
+      hp: 50 + player.stage * 10,
+      attack: 8 + player.stage * 2,
+      defense: 5 + player.stage,
+    };
+
+    let battleLog = [`${enemy.name} 등장!`];
+    let turn = 1;
+
+    function battleTurn() {
+      if (player.stats.hp <= 0) {
+        renderScene("gameOver");
+        return;
+      }
+      if (enemy.hp <= 0) {
+        battleLog.push("적을 물리쳤습니다!");
+        gainExp(50 + player.stage * 20);
+        player.stage++;
+        if (player.stage > player.maxStage) {
+          renderScene("victory");
+          return;
+        }
+        if (player.stage % 5 === 0) {
+          renderScene("specialEvent");
+        } else {
+          startStage();
+        }
+        return;
+      }
+
+      // 플레이어 공격
+      const playerDmg = Math.max(0, player.stats.attack - enemy.defense) + Math.floor(Math.random()*5);
+      enemy.hp -= playerDmg;
+      battleLog.push(`플레이어가 ${playerDmg} 피해를 입혔습니다.`);
+
+      if (enemy.hp <= 0) return battleTurn();
+
+      // 적 공격
+      const enemyDmg = Math.max(0, enemy.attack - player.stats.defense) + Math.floor(Math.random()*5);
+      player.stats.hp -= enemyDmg;
+      battleLog.push(`적이 ${enemyDmg} 피해를 입혔습니다.`);
+
+      updateBattleUI();
+
+      turn++;
+    }
+
+    function updateBattleUI() {
+      const textDiv = document.getElementById('text');
+      textDiv.innerHTML = battleLog.join('<br>') + `<br><br>
+        플레이어 HP: ${player.stats.hp} / ${player.stats.maxHp}<br>
+        적 HP: ${enemy.hp > 0 ? enemy.hp : 0}`;
+
+      const choicesDiv = document.getElementById('choices');
+      choicesDiv.innerHTML = `<button class='choice' onclick='battleTurn()'>다음 턴</button>`;
+    }
+
+    // 전투 시작
+    updateBattleUI();
+  }
+
+  // 안전 이벤트 예시
+  function safeEvent() {
+    const events = [
+      { text: "숲속에서 약초를 발견해 HP 10 회복", effect: () => { player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 10); } },
+      { text: "숨겨진 보물상자를 발견해 스탯포인트 +1", effect: () => { player.statPoints++; } },
+      { text: "함정에 걸려 스탯포인트 -1 (없으면 무효)", effect: () => { if(player.statPoints > 0) player.statPoints--; } },
+      { text: "마나가 5 회복됩니다.", effect: () => { player.stats.mana = Math.min(player.stats.maxMana, player.stats.mana + 5); } }
+    ];
+    // 운 스탯으로 좋은 이벤트 확률 가중치 조정
+    let weightedEvents = [];
+    events.forEach(ev => {
+      let weight = ev.text.includes('회복') || ev.text.includes('보물') ? 1 + Math.max(0, player.stats.luck)*0.2 : 1;
+      if(ev.text.includes('함정')) weight = 1 + Math.max(0, -player.stats.luck)*0.3;
+      weightedEvents.push({...ev, weight});
+    });
+
+    const chosen = chooseWeighted(weightedEvents);
+    chosen.effect();
+
+    renderScene("stage", player.stage, chosen.text);
+  }
+
+  // 경험치 획득 후 레벨업 체크
+  function gainExp(amount) {
+    player.exp += amount;
+    while(player.level < expTable.length - 1 && player.exp >= expTable[player.level]) {
+      player.exp -= expTable[player.level];
+      player.level++;
+      player.statPoints += 5;
+      player.skillPoints += 2;
+      alert(`레벨업! 레벨 ${player.level} 도달. 스탯포인트 5, 스킬포인트 2 지급!`);
+    }
+    updatePlayerStats();
+  }
+
+  // 레벨업으로 스탯 올리기 UI 보여주기
+  function showStatUpgrade() {
+    if(player.statPoints <= 0) {
+      document.getElementById('stat-upgrade').innerHTML = '';
+      return;
+    }
+    const container = document.getElementById('stat-upgrade');
+    container.innerHTML = `<b>스탯포인트 남음: ${player.statPoints}</b><br>`;
+    for (const stat in player.stats) {
+      if (stat === 'maxHp' || stat === 'maxMana' || stat === 'maxStamina') continue;
+      const btn = document.createElement('button');
+      btn.textContent = `+1 ${stat.toUpperCase()}`;
+      btn.onclick = () => {
+        player.stats[stat]++;
+        if(stat === 'hp' || stat === 'mana' || stat === 'stamina') {
+          // 최대값도 같이 올리기 (단순)
+          if(stat === 'hp') player.stats.maxHp++;
+          if(stat === 'mana') player.stats.maxMana++;
+          if(stat === 'stamina') player.stats.maxStamina++;
+          player.stats[stat] = Math.min(player.stats[stat], player.stats['max'+stat.charAt(0).toUpperCase()+stat.slice(1)]);
+        }
+        player.statPoints--;
+        updatePlayerStats();
+        showStatUpgrade();
+      };
+      container.appendChild(btn);
+    }
+  }
+
+  // 스킬 업그레이드 UI
+  function showSkillUpgrade() {
+    if(player.skillPoints <= 0) {
+      document.getElementById('skill-upgrade').innerHTML = '';
+      return;
+    }
+    const container = document.getElementById('skill-upgrade');
+    container.innerHTML = `<b>스킬포인트 남음: ${player.skillPoints}</b><br>`;
+    for (const skill in player.skills) {
+      const sk = player.skills[skill];
+      const btn = document.createElement('button');
+      btn.textContent = `${skill.toUpperCase()} Lv.${sk.level} / ${sk.maxLevel}`;
+      btn.disabled = sk.level >= sk.maxLevel || player.stats[sk.requiredStat] <= 0;
+      btn.onclick = () => {
+        if (player.stats[sk.requiredStat] > 0 && sk.level < sk.maxLevel) {
+          sk.level++;
+          player.skillPoints--;
+          updatePlayerStats();
+          showSkillUpgrade();
+        } else {
+          alert(`${sk.requiredStat.toUpperCase()} 스탯이 부족하거나 최대 레벨입니다.`);
+        }
+      };
+      container.appendChild(btn);
+    }
+  }
+
+  // 플레이어 스탯 화면 갱신
+  function updatePlayerStats() {
+    const statDiv = document.getElementById('player-stats');
+    let html = `<b>${player.name} - 레벨 ${player.level} / 경험치 ${player.exp} / 다음 레벨까지 ${expTable[player.level] - player.exp} XP</b><br>`;
+    for (const stat in player.stats) {
+      html += `<span>${stat.toUpperCase()}: ${player.stats[stat]}</span>`;
+    }
+    html += `<br>스탯포인트: ${player.statPoints} / 스킬포인트: ${player.skillPoints}`;
+    statDiv.innerHTML = html;
+
+    showStatUpgrade();
+    showSkillUpgrade();
+  }
+
+  // 씬 출력 함수
+  function renderScene(key, stage = 1, extraText = '') {
+    const scene = scenes[key];
+    const textDiv = document.getElementById('text');
+    const choicesDiv = document.getElementById('choices');
+    choicesDiv.innerHTML = '';
+    document.getElementById('stat-upgrade').innerHTML = '';
+    document.getElementById('skill-upgrade').innerHTML = '';
+
+    let textContent = typeof scene.text === 'function' ? scene.text(stage) : scene.text;
+    if (extraText) textContent += `<br><br><i>${extraText}</i>`;
+
+    textDiv.innerHTML = textContent;
+
+    // 선택지 출력
+    if (scene.choices && scene.choices.length > 0) {
+      scene.choices.forEach((c, idx) => {
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.innerText = `${idx+1}. ${c.text}`;
+        btn.onclick = () => {
+          if(typeof c.next === 'function') c.next();
+          else renderScene(c.next);
+        };
+        choicesDiv.appendChild(btn);
+      });
+    } else {
+      if(key === "stage") {
+        generateStageChoices(stage);
+      } else if(key === "specialEvent") {
+        const btn = document.createElement('button');
+        btn.className = 'choice';
+        btn.innerText = `계속 진행`;
+        btn.onclick = () => {
+          player.stage++;
+          if(player.stage > player.maxStage) {
+            renderScene("victory");
+          } else {
+            startStage();
+          }
+        };
+        choicesDiv.appendChild(btn);
+      }
+    }
+
+    updatePlayerStats();
+  }
+
+  // 이름 입력 후 시작
+  function setName() {
+    const input = document.getElementById('nameField');
+    if (input.value.trim() === "") {
+      alert("이름을 입력하세요.");
+      return;
+    }
+    player.name = input.value.trim();
+    renderScene("tutorial");
+  }
+
+  // 스테이지 시작
+  function startStage() {
+    if(player.stage > player.maxStage) {
+      renderScene("victory");
+      return;
+    }
+    // 최대 체력, 마나, 기력 조금씩 회복 (레벨/스테이지에 따라 조정 가능)
+    player.stats.hp = Math.min(player.stats.maxHp, player.stats.hp + 10);
+    player.stats.mana = Math.min(player.stats.maxMana, player.stats.mana + 5);
+    player.stats.stamina = Math.min(player.stats.maxStamina, player.stats.stamina + 5);
+
+    renderScene("stage", player.stage);
+  }
+
+  // 게임 재시작
+  function restartGame() {
+    player = {
       name: "모험가",
       level: 1,
       exp: 0,
       expToNext: 100,
       statPoints: 0,
       skillPoints: 0,
+      stage: 1,
+      maxStage: 10,
       stats: {
         hp: 100,
         maxHp: 100,
@@ -104,166 +529,28 @@
         fireball: { level: 0, maxLevel: 5, requiredStat: 'magicAttack', basePower: 20 },
         slash: { level: 0, maxLevel: 5, requiredStat: 'attack', basePower: 15 },
         heal: { level: 0, maxLevel: 3, requiredStat: 'mana', basePower: 25 }
-      }
+      },
+      learnedMagic: false,
+      learnedWarrior: false
     };
-
-    const expTable = [0, 100, 200, 350, 550, 800, 1100, 1450, 1850, 2300, 2800];
-
-    const scenes = {
-      intro: {
-        text: `이름 없는 숲에서 눈을 뜬 당신... 이름을 알려주세요:`,
-        choices: [{ text: "이름 입력하기", next: "nameInput" }]
-      },
-      nameInput: {
-        text: `당신의 이름은 무엇입니까? <br><input type='text' id='nameField'><button class='choice' onclick='setName()'>확인</button>`,
-        choices: []
-      },
-      tutorial: {
-        text: `
-          <h2>게임 튜토리얼</h2>
-          <p>이 게임은 키보드 숫자키로 선택지를 고르며 진행합니다.</p>
-          <ul>
-            <li>숫자키(1,2,3...)를 눌러 선택지를 선택하세요.</li>
-            <li>레벨업 시 스탯 포인트와 스킬 포인트를 받습니다.</li>
-            <li>스탯과 스킬을 전략적으로 올려 나가세요.</li>
-          </ul>
-          <p>준비가 되면 시작 버튼을 눌러주세요!</p>
-          <button class="choice" onclick="renderScene('start')">게임 시작</button>
-        `,
-        choices: []
-      },
-      start: {
-        text: () => `${player.name}님, 깊은 숲속에서 눈을 떴습니다. 어느 쪽으로 가시겠습니까?<br><img src='https://i.imgur.com/dcGgKZC.png' alt='숲 이미지'>`,
-        choices: [
-          { text: "왼쪽 길로 간다", next: "magePath" },
-          { text: "오른쪽 길로 간다", next: "warriorPath" },
-        ]
-      },
-      magePath: {
-        text: () => {
-          player.learnedMagic = true;
-          return `고대 마법의 탑을 발견하고 마법을 배웁니다. 강력한 마법사가 되었습니다.<br><img src='https://i.imgur.com/Ki0A9hM.png' alt='마법사 이미지'>`;
-        },
-        choices: [{ text: "탑을 떠난다", next: "finalEncounter" }]
-      },
-      warriorPath: {
-        text: () => {
-          return `검을 집어들고 성을 향합니다. 전사가 되어 왕을 수호하게 됩니다.<br><img src='https://i.imgur.com/xfndOdJ.png' alt='전사 이미지'>`;
-        },
-        choices: [{ text: "성을 떠난다", next: "finalEncounter" }]
-      },
-      finalEncounter: {
-        text: () => {
-          if (player.learnedMagic) {
-            return `검은 그림자가 나타납니다. ${player.name}님, 당신은 마법으로 그림자를 물리치고 세상을 구합니다. <b>엔딩: 마법 영웅</b><br><img src='https://i.imgur.com/SbZGQNN.png' alt='마법 결투'>`;
-          } else {
-            return `검은 그림자가 나타납니다. ${player.name}님, 검을 휘둘렀지만 역부족이었습니다... 세상은 어둠에 잠깁니다. <b>엔딩: 비극적 패배</b><br><img src='https://i.imgur.com/W2vUTTZ.png' alt='패배'>`;
-          }
-        },
-        choices: [{ text: "다시 시작", next: "intro" }]
-      }
-    };
-
-    function setName() {
-      const input = document.getElementById('nameField');
-      if (input && input.value.trim() !== "") {
-        player.name = input.value.trim();
-        renderScene("tutorial");
-      }
-    }
-
-    function renderScene(sceneKey) {
-      const scene = scenes[sceneKey];
-      const sceneText = typeof scene.text === 'function' ? scene.text() : scene.text;
-      document.getElementById('text').innerHTML = sceneText;
-
-      const choicesDiv = document.getElementById('choices');
-      choicesDiv.innerHTML = '';
-      scene.choices.forEach((choice, index) => {
-        const btn = document.createElement('button');
-        btn.innerText = `${index + 1}. ${choice.text}`;
-        btn.className = 'choice';
-        btn.onclick = () => renderScene(choice.next);
-        choicesDiv.appendChild(btn);
-      });
-
-      // 스탯과 스킬 업그레이드 영역 초기화
-      document.getElementById('stat-upgrade').innerHTML = '';
-      document.getElementById('skill-upgrade').innerHTML = '';
-
-      // 스탯/스킬 포인트 있으면 UI 표시
-      if (player.statPoints > 0) showStatUpgrade();
-      if (player.skillPoints > 0) showSkillUpgrade();
-    }
-
-    // 스탯 포인트 UI
-    function showStatUpgrade() {
-      const container = document.getElementById('stat-upgrade');
-      container.innerHTML = `<h3>스탯 포인트: ${player.statPoints}개 사용 가능</h3>`;
-      for (const stat in player.stats) {
-        if (stat === 'maxHp' || stat === 'maxStamina' || stat === 'maxMana') continue; // 최대치는 직접 올리지 않음
-        const btn = document.createElement('button');
-        btn.innerText = `+1 ${stat.toUpperCase()}`;
-        btn.onclick = () => {
-          player.stats[stat]++;
-          if (stat === 'hp' || stat === 'stamina' || stat === 'mana') {
-            // 최대치가 따로 있으면 같이 증가
-            if (stat === 'hp') player.stats.maxHp++;
-            if (stat === 'stamina') player.stats.maxStamina++;
-            if (stat === 'mana') player.stats.maxMana++;
-          }
-          player.statPoints--;
-          updateStatsDisplay();
-          if (player.statPoints === 0) container.innerHTML = '';
-          else showStatUpgrade();
-        };
-        container.appendChild(btn);
-      }
-    }
-
-    // 스킬 포인트 UI
-    function showSkillUpgrade() {
-      const container = document.getElementById('skill-upgrade');
-      container.innerHTML = `<h3>스킬 포인트: ${player.skillPoints}개 사용 가능</h3>`;
-      for (const skill in player.skills) {
-        const skillData = player.skills[skill];
-        const btn = document.createElement('button');
-        btn.innerText = `${skill.toUpperCase()} Lv.${skillData.level} → Lv.${skillData.level + 1}`;
-        btn.disabled = skillData.level >= skillData.maxLevel;
-        btn.onclick = () => {
-          if (player.stats[skillData.requiredStat] > 0 && skillData.level < skillData.maxLevel) {
-            skillData.level++;
-            player.skillPoints--;
-            updateStatsDisplay();
-            if (player.skillPoints === 0) container.innerHTML = '';
-            else showSkillUpgrade();
-          } else {
-            alert(`${skillData.requiredStat.toUpperCase()} 스탯이 부족하거나 최대 레벨입니다.`);
-          }
-        };
-        container.appendChild(btn);
-      }
-    }
-
-    function updateStatsDisplay() {
-      // 예시로 HP만 간단히 갱신 (필요시 전체 UI 구현 가능)
-      // 여기서는 사실상 즉시 반영만 하는 용도
-    }
-
-    // 게임 시작
     renderScene("intro");
+  }
 
-    // 키보드 입력으로 선택지 고르기
-    document.addEventListener('keydown', e => {
-      if (e.key >= '1' && e.key <= '9') {
-        const choices = document.querySelectorAll('#choices .choice');
-        const idx = parseInt(e.key) - 1;
-        if (choices[idx]) {
-          choices[idx].click();
-        }
+  // 키보드 숫자키로 선택지 고르기
+  document.addEventListener('keydown', e => {
+    if (e.key >= '1' && e.key <= '9') {
+      const choices = document.querySelectorAll('#choices .choice');
+      const idx = parseInt(e.key) - 1;
+      if (choices[idx]) {
+        choices[idx].click();
       }
-    });
+    }
+  });
 
-  </script>
+  // 게임 초기화
+  renderScene("intro");
+
+</script>
+
 </body>
 </html>
